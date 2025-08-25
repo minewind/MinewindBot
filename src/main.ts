@@ -1,7 +1,6 @@
 import { codeBlock, escapeCodeBlock } from "discord.js";
 import dotenv from "dotenv";
 import process from "node:process";
-import { ChatMessage } from "prismarine-chat";
 import { createClient } from "redis";
 import z from "zod";
 import { EssencePriceChecker } from "./bot/essences/EssencePriceChecker";
@@ -29,7 +28,7 @@ import {
 	VoteEvent,
 	WelcomeEvent,
 } from "./MessageEvent";
-import { getRandomInt, manualSend, pingUser, toCleanText } from "./util";
+import { breakLinks, getRandomInt, manualSend, pingUser } from "./util";
 
 dotenv.config();
 
@@ -88,96 +87,80 @@ async function main() {
 		})
 		.connect();
 
-	minecraftBot.registerMessageEvent(
-		(jsonMsg: ChatMessage, position: string) => {
-			const message = jsonMsg.json;
-			const cleaned = toCleanText(message);
-			injest.injest(cleaned);
+	minecraftBot.registerMessageEvent((message: string) => {
+		injest.injest(message);
+		return false;
+	});
+
+	minecraftBot.registerMessageEvent((message: string) => {
+		logger.debug(`Analyzing "${message}`);
+
+		if (!ChatEvent.regexes[0].test(message)) {
 			return false;
-		},
-	);
+		}
 
-	minecraftBot.registerMessageEvent(
-		(jsonMsg: ChatMessage, position: string) => {
-			const message = jsonMsg.json;
-			const cleaned = toCleanText(message);
-			logger.debug(`Analyzing "${cleaned}`);
+		const messageBody = message.slice(message.indexOf(": ") + 2);
+		if (!messageBody.startsWith("-")) {
+			return false;
+		}
 
-			if (!ChatEvent.regexes[0].test(cleaned)) {
-				return false;
-			}
-
-			const messageBody = cleaned.slice(cleaned.indexOf(": ") + 2);
-			if (!messageBody.startsWith("-")) {
-				return false;
-			}
-
-			let response: string | undefined;
-			if (messageBody.startsWith("-help")) {
-				response =
-					"I currently support 2 commands: -help and -pc (ess name) (tier). Pc *only* works for essences";
-			} else {
-				response = essencePriceChecker.processMessage(messageBody);
-				discordBot.queue(
-					codeBlock(escapeCodeBlock(cleaned)),
-					EventChannel.debug.channel_id,
-				);
-				discordBot.queue(
-					codeBlock(escapeCodeBlock(response || "undefined")),
-					EventChannel.debug.channel_id,
-				);
-			}
-
+		let response: string | undefined;
+		if (messageBody.startsWith("-help")) {
+			response =
+				"I currently support 2 commands: -help and -pc (ess name) (tier). Pc *only* works for essences";
+		} else {
+			response = essencePriceChecker.processMessage(messageBody);
 			if (typeof response === "undefined") {
-				return false;
+				discordBot.queue(
+					`<<< ${codeBlock(escapeCodeBlock(message))}\n>>> ${"undefined"}`,
+					EventChannel.debug.channel_id,
+				);
 			}
+		}
 
-			client.xAdd(
-				"dc-to-mw-chat",
-				"*",
-				{
-					message: response,
-					messageType: "command",
-				},
-				{
-					TRIM: {
-						strategy: "MAXLEN",
-						threshold: 4000,
-						strategyModifier: "~",
-					},
-				},
-			);
+		if (typeof response === "undefined") {
 			return false;
-		},
-	);
+		}
 
-	minecraftBot.registerMessageEvent(
-		(jsonMsg: ChatMessage, position: string) => {
-			// Interestingly, all the important information is stored within the
-			// sender field. Others can be ignored.
-			const message = jsonMsg.json;
-			//console.debug(`Parsing: ${JSON.stringify(message, null, 4)}`);
-			const cleaned = toCleanText(message);
-			logger.debug(`MC Cleaned Chat: "${cleaned}"`);
-			client.xAdd(
-				"chat",
-				"*",
-				{
-					message: cleaned,
-					raw: JSON.stringify(message),
-					messageType: "chat",
+		client.xAdd(
+			"dc-to-mw-chat",
+			"*",
+			{
+				message: response,
+				messageType: "command",
+			},
+			{
+				TRIM: {
+					strategy: "MAXLEN",
+					threshold: 4000,
+					strategyModifier: "~",
 				},
-				{
-					TRIM: {
-						strategy: "MAXLEN",
-						threshold: 4000,
-						strategyModifier: "~",
-					},
+			},
+		);
+		return false;
+	});
+
+	minecraftBot.registerMessageEvent((message: string) => {
+		//console.debug(`Parsing: ${JSON.stringify(message, null, 4)}`);
+		logger.debug(`MC Cleaned Chat: "${message}"`);
+		client.xAdd(
+			"chat",
+			"*",
+			{
+				message: message,
+				raw: JSON.stringify(message),
+				messageType: "chat",
+			},
+			{
+				TRIM: {
+					strategy: "MAXLEN",
+					threshold: 4000,
+					strategyModifier: "~",
 				},
-			);
-			return false;
-		},
-	);
+			},
+		);
+		return false;
+	});
 
 	let prevId = (await client.get("prevId")) || "0-0";
 
@@ -308,24 +291,24 @@ async function main() {
 			{ key: "dc-to-mw-chat", id: prevDCToMWId },
 			{ COUNT: 1 },
 		);
-		if (rawChatStream === null) {
-			setTimeout(pollDCToMWQueue, 1000);
-			return;
-		}
 		const dcToMWchatStream = DCToMWChatStreamSchema.safeParse(rawChatStream);
-		if (!dcToMWchatStream.success) {
-			logger.warn(`Failed to parse chat stream: ${dcToMWchatStream.error}`);
+		if (dcToMWchatStream.error) {
+			logger.warn(`Failed to parse chat stream`, dcToMWchatStream.error);
 			setTimeout(pollDCToMWQueue, 1000);
 			return;
 		}
+
 		const value = dcToMWchatStream.data[0].messages.at(0);
+
 		if (value === undefined) {
 			logger.info("Received no new items from chat stream");
 			setTimeout(pollDCToMWQueue, 1000);
 			return;
 		}
 
-		minecraftBot.send(value.message.message);
+		const rawMessage = value.message.message;
+		const cleanedMessage = breakLinks(rawMessage);
+		minecraftBot.send(cleanedMessage);
 
 		prevDCToMWId = value.id;
 		client.set("prevDCToMWId", prevDCToMWId);
@@ -362,7 +345,7 @@ async function main() {
 		const [cleanedAuthor, cleanedMessage] = [author, message].map((value) => {
 			return value
 				.toString()
-				.replace(/[^a-zA-Z0-9 _'":;+\-*,.!@#$%^&()[\\/\]{}<>]*/gi, "");
+				.replace(/[^a-zA-Z0-9 _'":;+?\-*,.!@#$%^&()[\\/\]{}<>]*/gi, "");
 		});
 
 		//message.guild?.members.fetch(message.author).then((member) => {
@@ -379,7 +362,7 @@ async function main() {
 			allowOwnerBypass &&
 			has_bypass_role
 		) {
-			minecraftBot.send(message.toString().replace("-", "/"));
+			minecraftBot.send(message.toString().replace(";", "/"));
 		} else {
 			const cleanedFmtMessage = `[DC] ${cleanedAuthor}: ${cleanedMessage}`;
 			logger.debug(`Queueing "${cleanedFmtMessage}" to minecraft...`);

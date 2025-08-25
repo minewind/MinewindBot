@@ -26,14 +26,14 @@ export function flatten(arg: object): string {
 	return out;
 }
 
-export function clean(message: string): string {
+export function stripMinecraftColors(message: string): string {
 	message = message.replace(/§[a-zA-Z0-9]/gm, "");
 	return message;
 }
 
-export function toCleanText(message): string {
+export function cleanMinecraftJson(message): string {
 	let flatMessage = flatten(message) || "";
-	let cleanedMessage = clean(flatMessage);
+	let cleanedMessage = stripMinecraftColors(flatMessage);
 	return cleanedMessage;
 }
 

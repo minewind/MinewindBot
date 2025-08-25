@@ -7,14 +7,11 @@ dotenv.config();
 import mineflayer, { type Bot } from "mineflayer";
 import type { ChatMessage } from "prismarine-chat";
 import logger from "../Logger";
-import { breakLinks, toCleanText } from "../util";
+import { cleanMinecraftJson } from "../util";
 // const mineflayer = require("mineflayer");
 
 export type ChatEventHandler = (username: string, message: string) => boolean;
-export type MessageEventHandler = (
-	jsonMsg: ChatMessage,
-	position: string,
-) => boolean;
+export type MessageEventHandler = (message: string) => boolean;
 
 export class MinecraftBot {
 	cooldown: number = 1;
@@ -39,17 +36,18 @@ export class MinecraftBot {
 
 		this.bot.on("message", (jsonMsg: ChatMessage, position: string) => {
 			try {
-				const cleaned = toCleanText(jsonMsg.json);
-				if (cleaned.startsWith("Welcome ")) {
-					if (this.recentGreetings.includes(cleaned)) {
+				const message = cleanMinecraftJson(jsonMsg.json);
+				// Don't send most double-welcome messages, just one
+				if (message.startsWith("Welcome ")) {
+					if (this.recentGreetings.includes(message)) {
 						return;
 					} else {
-						this.recentGreetings.unshift(cleaned);
+						this.recentGreetings.unshift(message);
+						if (this.recentGreetings.length >= 20) this.recentGreetings.pop();
 					}
-					if (this.recentGreetings.length >= 20) this.recentGreetings.pop();
 				}
 				for (let i = 0; i < this.messageEventHandlers.length; i++) {
-					const result = this.messageEventHandlers[i](jsonMsg, position);
+					const result = this.messageEventHandlers[i](message);
 					if (result === true) {
 						break;
 					}
@@ -88,7 +86,6 @@ export class MinecraftBot {
 	}
 
 	send(message: string): void {
-		message = breakLinks(message);
 		message = message.slice(0, 256);
 		this.bot.chat(message);
 	}
