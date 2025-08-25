@@ -2,14 +2,18 @@ declare global {
 	namespace NodeJS {
 		interface ProcessEnv {
 			DISCORD_TOKEN: string;
+
 			MINECRAFT_IP: string;
+			MINECRAFT_VERSION: string;
 			MINECRAFT_USERNAME: string;
-			MINECRAFT_PASSWORD: string;
+
 			REDIS_USERNAME: string;
 			REDIS_PASSWORD: string;
+
 			INFLUXDB_HOST: string;
 			INFLUXDB_DATABASE: string;
 			INFLUXDB_TOKEN: string;
+
 			REDIS_HOST: string;
 			REDIS_PORT: number;
 			//NODE_ENV: 'development' | 'production';
