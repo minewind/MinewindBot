@@ -1,10 +1,13 @@
-import { codeBlock, escapeCodeBlock } from "discord.js";
 import dotenv from "dotenv";
 import process from "node:process";
 import { createClient } from "redis";
 import z from "zod";
-import { EssencePriceChecker } from "./bot/essences/EssencePriceChecker";
 import { MinecraftBot } from "./bot/MinecraftBot";
+import { CommandManagerBuilder } from "./commands/CommandManager";
+import { Help } from "./commands/Help";
+import { Players } from "./commands/Players";
+import { PriceCheck } from "./commands/PriceCheck";
+import { Upcoming } from "./commands/Upcoming";
 import { DiscordBot } from "./discord/DiscordBot";
 import { EventChannel, Users } from "./discord/servers";
 import { Injest } from "./influx/injest";
@@ -28,6 +31,7 @@ import {
 	VoteEvent,
 	WelcomeEvent,
 } from "./MessageEvent";
+import { MostRecentEvent } from "./MostRecentEvent";
 import { breakLinks, getRandomInt, manualSend, pingUser } from "./util";
 
 dotenv.config();
@@ -70,8 +74,7 @@ async function main() {
 	// TODO: Add auto reconnection logic with exponential backoff
 	const minecraftBot = new MinecraftBot();
 	const discordBot = new DiscordBot();
-	const essencePriceChecker = new EssencePriceChecker();
-	const injest = new Injest(essencePriceChecker.essenceMap);
+	//const essencePriceChecker = new EssencePriceChecker();
 
 	const client = await createClient({
 		username: process.env.REDIS_USERNAME,
@@ -87,8 +90,36 @@ async function main() {
 		})
 		.connect();
 
+	const mostRecentEvent = new MostRecentEvent(client);
+	await mostRecentEvent.init();
+
+	const commandManager = new CommandManagerBuilder()
+		.addCommand(new Help(), ["minecraft", "discord"])
+		.addCommand(new PriceCheck(), ["minecraft", "discord"])
+		.addCommand(new Upcoming(minecraftBot, mostRecentEvent), [
+			"discord",
+			"minecraft",
+		])
+		.addCommand(new Players(minecraftBot), ["discord"])
+		.build();
+
+	const injest = new Injest();
+
 	minecraftBot.registerMessageEvent((message: string) => {
 		injest.injest(message);
+		return false;
+	});
+
+	// Command Handlers
+	discordBot.registerMessageHandler((message) => {
+		if (message.channelId !== EventChannel.commands.channel_id) {
+			return false;
+		}
+		const msg = message.toString();
+		const response = commandManager.process(msg, "discord");
+		if (typeof response === "undefined") return false;
+
+		discordBot.send(response, EventChannel.commands.channel_id);
 		return false;
 	});
 
@@ -100,27 +131,10 @@ async function main() {
 		}
 
 		const messageBody = message.slice(message.indexOf(": ") + 2);
-		if (!messageBody.startsWith("-")) {
-			return false;
-		}
 
-		let response: string | undefined;
-		if (messageBody.startsWith("-help")) {
-			response =
-				"I currently support 2 commands: -help and -pc (ess name) (tier). Pc *only* works for essences";
-		} else {
-			response = essencePriceChecker.processMessage(messageBody);
-			if (typeof response === "undefined") {
-				discordBot.queue(
-					`<<< ${codeBlock(escapeCodeBlock(message))}\n>>> ${"undefined"}`,
-					EventChannel.debug.channel_id,
-				);
-			}
-		}
+		const response = commandManager.process(messageBody, "minecraft");
 
-		if (typeof response === "undefined") {
-			return false;
-		}
+		if (typeof response === "undefined") return false;
 
 		client.xAdd(
 			"dc-to-mw-chat",
@@ -170,18 +184,17 @@ async function main() {
 			{ key: "chat", id: prevId },
 			{ COUNT: 5 },
 		);
+		// This simply means no new messages
 		if (rawChatStream === null) {
 			return;
 		}
 		const chatStream = chatStreamSchema.safeParse(rawChatStream);
-		if (!chatStream.success) {
-			logger.warn(`Failed to parse chat stream: ${chatStream.error}`);
-			//console.warn(`Failed to parse chat stream`);
+		if (chatStream.error) {
+			logger.warn(`Failed to parse chat stream`, chatStream.error);
 			return;
 		}
 		const lastValue = chatStream.data[0].messages.at(-1);
 		if (lastValue === undefined) {
-			//console.log("Received no new items from chat stream");
 			return;
 		}
 
@@ -205,46 +218,55 @@ async function main() {
 						EventChannel.sharpening.channel_id,
 					);
 				} else if (SnovasionEvent.isValid(message)) {
+					mostRecentEvent.set("Snovasion");
 					discordBot.queue(
 						new SnovasionEvent(message).generateDiscordMessage(),
 						EventChannel.snovasion.channel_id,
 					);
 				} else if (LabyrinthEvent.isValid(message)) {
+					mostRecentEvent.set("Labyrinth");
 					discordBot.queue(
 						new LabyrinthEvent(message).generateDiscordMessage(),
 						EventChannel.labyrinth.channel_id,
 					);
 				} else if (BeefEvent.isValid(message)) {
+					mostRecentEvent.set("Beef");
 					discordBot.queue(
 						new BeefEvent(message).generateDiscordMessage(),
 						EventChannel.beef.channel_id,
 					);
 				} else if (AbyssalEvent.isValid(message)) {
+					mostRecentEvent.set("Abyssal");
 					discordBot.queue(
 						new AbyssalEvent(message).generateDiscordMessage(),
 						EventChannel.abyssal.channel_id,
 					);
 				} else if (AttackOnGiantEvent.isValid(message)) {
+					mostRecentEvent.set("Attack on Giant");
 					discordBot.queue(
 						new AttackOnGiantEvent(message).generateDiscordMessage(),
 						EventChannel.attackongiant.channel_id,
 					);
 				} else if (FoxEvent.isValid(message)) {
+					mostRecentEvent.set("Fox");
 					discordBot.queue(
 						new FoxEvent(message).generateDiscordMessage(),
 						EventChannel.fox.channel_id,
 					);
 				} else if (BaitEvent.isValid(message)) {
+					mostRecentEvent.set("Bait");
 					discordBot.queue(
 						new BaitEvent(message).generateDiscordMessage(),
 						EventChannel.bait.channel_id,
 					);
 				} else if (FreeForAllEvent.isValid(message)) {
+					mostRecentEvent.set("Free-for-all");
 					discordBot.queue(
 						new FreeForAllEvent(message).generateDiscordMessage(),
 						EventChannel.freeforall.channel_id,
 					);
 				} else if (TeamDeathMatchEvent.isValid(message)) {
+					mostRecentEvent.set("Team Deathmatch");
 					discordBot.queue(
 						new TeamDeathMatchEvent(message).generateDiscordMessage(),
 						EventChannel.teamdeathmatch.channel_id,
@@ -291,6 +313,11 @@ async function main() {
 			{ key: "dc-to-mw-chat", id: prevDCToMWId },
 			{ COUNT: 1 },
 		);
+		// This simply means no new messages
+		if (rawChatStream === null) {
+			setTimeout(pollDCToMWQueue, 1000);
+			return;
+		}
 		const dcToMWchatStream = DCToMWChatStreamSchema.safeParse(rawChatStream);
 		if (dcToMWchatStream.error) {
 			logger.warn(`Failed to parse chat stream`, dcToMWchatStream.error);
@@ -316,25 +343,6 @@ async function main() {
 	}
 
 	pollDCToMWQueue();
-
-	discordBot.registerMessageHandler((message) => {
-		if (message.channelId !== EventChannel.commands.channel_id) {
-			return false;
-		}
-		const msg = message.toString();
-		if (msg === "-players") {
-			const players = minecraftBot
-				.getPlayerList()
-				.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-				.join("\n");
-			discordBot.send(players, EventChannel.commands.channel_id);
-		} else if (msg === "-upcoming") {
-			const nextEvent = minecraftBot.bot.tablist.header.toString();
-			logger.debug(`Tablist`, minecraftBot.bot.tablist);
-			discordBot.send(nextEvent, EventChannel.commands.channel_id);
-		}
-		return false;
-	});
 
 	discordBot.registerMessageHandler((message) => {
 		if (message.channelId !== EventChannel.chat.channel_id) {
@@ -397,7 +405,7 @@ async function main() {
 	const maxTimeoutMS = 1200000;
 
 	function advertise() {
-		const discord_link = "https://discord.gg/Jf29Xsb7";
+		const discord_link = "https://discord.gg/TbmCrPmEBH";
 		const advertisements = [
 			`> Minewind auto event ping w/ bi-directional chat sync (in beta). ${discord_link} Try it out for yourself, send a msg in #chat and see it appear in mw!`,
 			`> Minewind auto event ping w/ bi-directional chat sync (in beta). Join now ${discord_link}`,
@@ -413,7 +421,7 @@ async function main() {
 		setTimeout(advertise, getRandomInt(minTimeoutMS, maxTimeoutMS));
 	}
 
-	setTimeout(advertise, getRandomInt(100000, 200000));
+	setTimeout(advertise, getRandomInt(1000000, 2000000));
 
 	logger.info("Bot is started");
 	manualSend(`Bot is started`, EventChannel.logging.channel_id);
@@ -421,7 +429,7 @@ async function main() {
 }
 
 process.on("uncaughtException", async (error) => {
-	logger.error("Crashed due ot uncaught exception", {
+	logger.error("Crashed due to uncaught exception", {
 		cause: error.cause,
 		message: error.message,
 		name: error.name,

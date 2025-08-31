@@ -77,3 +77,16 @@ export function getRandomInt(min, max) {
 export function unspaceAndLowercase(message: string): string {
 	return message.toLocaleLowerCase().replace(/ /g, "");
 }
+
+export function parseRomanNumeral(numeral: string): number | undefined {
+	const rn_to_num = {
+		i: 1,
+		ii: 2,
+		iii: 3,
+		iv: 4,
+		v: 5,
+	};
+	if (numeral in rn_to_num) {
+		return rn_to_num[numeral];
+	}
+}

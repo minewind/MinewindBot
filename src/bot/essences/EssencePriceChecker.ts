@@ -1,7 +1,8 @@
+import { distance } from "fastest-levenshtein";
 import * as fs from "fs";
 import * as Papa from "papaparse";
 import logger from "../../Logger";
-import { unspaceAndLowercase } from "../../util";
+import { parseRomanNumeral, unspaceAndLowercase } from "../../util";
 
 export class EssencePriceChecker {
 	essenceMap!: Map<string, Essence>;
@@ -26,8 +27,40 @@ export class EssencePriceChecker {
 		this.essenceMap = generateFullMap(essences);
 		this.essenceMapMaginalized = marginalizeMap(this.essenceMap);
 	}
+	process(argList: string[]) {
+		let args = argList.join(" ").toLowerCase();
 
-	processMessage(message: string) {
+		// Remove "essence of" from query
+		args = args.replace("essence of", "").replace("essence", "").trim();
+
+		const pcRegex = /^(.*?) ?(\d+| i| ii| iii| iv| v)?$/;
+
+		if (pcRegex.test(args)) {
+			const match = args.match(pcRegex);
+			if (match === null) return;
+			const spellName = match[1];
+			const raw_level = (match[2] || "1").trim();
+			const romanNumeral = parseRomanNumeral(raw_level);
+			const level = romanNumeral ? romanNumeral : Number(raw_level);
+			logger.debug(`"${spellName}": ${level}`);
+			const ess: Essence | undefined = this.lookupEssence(spellName);
+			if (typeof ess === "undefined") {
+				const distances = {};
+				for (const realname of Object.keys(this.essenceMap)) {
+					distances[realname] = distance(realname, spellName);
+				}
+				logger.debug(`Levenshtein calculations for ${spellName}`, distances);
+				const closest = Object.keys(distances).reduce((a, b) =>
+					distances[a] > distances[b] ? b : a,
+				);
+				return `Unable to price check that item. Maybe try ${closest}`;
+			} else {
+				return ess.generatePriceString(level);
+			}
+		}
+	}
+
+	legacyProcessMessage(message: string) {
 		logger.debug(`Processing command ${message}`);
 		message = message.toLowerCase();
 
@@ -115,6 +148,8 @@ export class Essence {
 			return `PC: ${this.title} is not available in tier ${tier}`;
 		} else if (this.prices[idx] === "(no ess form)") {
 			return `PC: ${this.title} is not available in ess form at tier ${tier}`;
+		} else if (this.cap === 1) {
+			return `PC: ${this.title} costs ${this.prices[idx]}`;
 		} else {
 			return `PC: ${this.title} ${tier} costs ${this.prices[idx]}`;
 		}

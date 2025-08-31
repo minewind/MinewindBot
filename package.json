@@ -6,6 +6,7 @@
     "@types/papaparse": "^5.3.16",
     "discord.js": "^14.21.0",
     "dotenv": "^17.2.1",
+    "fastest-levenshtein": "^1.0.16",
     "mineflayer": "^4.31.0",
     "papaparse": "^5.5.3",
     "prismarine-chat": "^1.11.0",
@@ -13,6 +14,7 @@
     "redis": "^5.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
+    "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "zod": "^4.0.17"
   },

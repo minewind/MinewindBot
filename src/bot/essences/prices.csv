@@ -8,8 +8,8 @@ Tempest Key Essences,,,,,,,,,,,Contributions and opinions to validate prices com
 ,Groundbreak Crit,,BBB,,,,,,,,,,,,,
 ,Fairy Barrier,4,BBB,S,X close to Z,Z,,,,,,,,,,
 ,Web Eater,4,B,A,SS,SSS,,,,,"There are now 399 essences including tiers (32 Tempest, 35 Paradox, 30 Dimensional, Inferno 35, Chaos 267)",,,,,
-,Gravity Resistance,4,BB,A,X close to Z,Z,,,,,Average chaos key price: 1.75s (1.5-2),,,,,
-,Blood Walker,3,BBB,AA,SSS,X,,,,,bleep bloop christiebot price check machine sayz:,,,,,
+,Gravity Resistance,4,BB,A,X close to Z,Z,,,,,Average chaos key price: 2s,,,,,
+,Blood Walker,4,BBB,AA,SSS,X,,,,,bleep bloop christiebot price check machine sayz:,,,,,
 ,Ghost Block,,(no ess form),Price is based on Shield's soul type/count and if it has mending,,,,,,,Price Tiers,Quality Tiers,,,,
 ,Poseidon Block,,(no ess form),Price is based on Shield's soul type/count and if it has mending,,,,,,,Bidding wars,Z,,,,
 ,Railgun,,S,,,,,Fire 2,,,1-2 Sheggs,X,,,,
@@ -34,12 +34,12 @@ Paradox Key Essences,,,,,,,,,,,5s,A,,,,
 ,Photosynthesis,,B,,,,,,,,^ Link to his Master Essence Spreadsheet,,,,,
 ,Heal On Teleport,3,BBB,S,SSS,,,,,,,,,,,
 ,Fatigue Resistance,4,B,SS,SSS,X,,,,,,,,,,
-,Skeleton On Teleport,,AA,,,,,Nature 3,,,,,,,,
-,Curse Of Fangs,,BBB,,,,,Shdw 3,,,Price Tiers,Quality Tiers,,,,
+,Skeleton On Teleport,,AA,,,,,,,,,,,,,
+,Curse Of Fangs,,BBB,,,,,Shdw 1,,,Price Tiers,Quality Tiers,,,,
 ,Force Field,,CC,,,,,Dim 1,,,Bidding wars,Z,,,,
-,Goatfather,,CC,,,,,,,,1-2 Sheggs,X,,,,
+,Goatfather,,CC,,,,,Nature 2,,,1-2 Sheggs,X,,,,
 ,Lava Eater,,BB,,,,,Free,,,15s-26s,SSS,,,,
-,Spontanious combustion,,CC,,,,,Free,,,9s-15s,SS,,,,
+,Spontaneous Combustion,,CC,,,,,Free,,,9s-15s,SS,,,,
 Dimensional Key Essences,,,,,,,,,,,7s-9s,S,,,,
 ,Arrow Strike,,AAA,,,,,,,,7s,AAA,,,,
 ,Fatal Strike,,SSS,,,,,,,,6s,AA,,,,
@@ -89,8 +89,8 @@ Chaos Key Essences,,,,,,,,,,,,,,1,,1
 ,Poison,3,C,CCC,AA,,,,,,,,,,15,0.234375
 ,Slow,5,CC,B,AA,SSS,Z,,,,,,,,30,0.46875
 ,Bind,3,CCC,BB,AA,,,,,,,,,,5,0.078125
-,Cripple,3,BB,AAA,SSS,,,,,,Price Tiers,Quality Tiers,,,10,0.15625
-,Feed Blocker,3,B,BBB,A,,,,,,Bidding wars,Z,,,10,0.15625
+,Cripple,3,B,A,SSS,,,,,,Price Tiers,Quality Tiers,,,10,0.15625
+,Feed Blocker,3,B,BB,AA,,,,,,Bidding wars,Z,,,10,0.15625
 ,Marker,,CCC,,,,,,,,1-2 Sheggs,X,,74,,74
 ,Magic Disrupt,3,CCC,A,SSS,,,,,,15s-26s,SSS,,32,,32
 ,Starve,,B,,,,,,,,9s-15s,SS,,200,,100
@@ -162,7 +162,7 @@ Chaos Key Essences,,,,,,,,,,,,,,1,,1
 ,Spongebob,,CC,,,,,,,,,,,,,-2
 ,Heal On Shield Block,,CC,,,,,,,,,,,,,-2
 ,Lava Walker,,CC,,,,,,,,,,,,,-2
-,Ice Growth,,C,,,,,,,,,,,,,-2
+,Ice Growth,,C,,,,,Ice 1,,,,,,,,-2
 ,Blood Soup,,C,,,,,,,,,,,,,-2
 ,Baby Horde,,C,,,,,,,,,,,,,-2
 ,Rabbid Rabbits,,C,,,,,,,,,,,,,-2

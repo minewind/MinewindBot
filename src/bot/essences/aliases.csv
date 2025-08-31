@@ -1,12 +1,12 @@
-Curse of Living Flames,living flame,living flames
-Explosive Webbing,explosive web
+Curse of Living Flames,living flame,living flames,colf
+Explosive Webbing,explosive web,webbing explosion,web explosion
 Vampire Strike,vamp strike
 Fertile Strike
 Groundbreak Crit
-Fairy Barrier,fb
+Fairy Barrier
 Web Eater
 Gravity Resistance,gravity res, grav resistance,grav res,grav
-Blood Walker
+Blood Walker,bw
 Ghost Block
 Poseidon Block
 Railgun
@@ -16,16 +16,16 @@ Entangling Roots
 Living Wings
 Condensed Lightning
 Cake On Kill
-Repeating Arrow
+Repeating Arrow,repeat arrow
 Fang Strike
-Slayer Of The Blind
+Slayer Of The Blind,blind slayer
 Absorption On Teleport,absorb on tp, absorb on teleport,absorbtion on tp,tp absorb,tp absorbtion
 Ice Pedestal
-Rain Healing
-Back Claymore
-Nausea Immunity
+Rain Healing,rain heal
+Back Claymore,back clay
+Nausea Immunity,nausea immun
 Weakness Resistance,weakness res,weak resistance,weak res
-Proximity Blind
+Proximity Blind,prox blind
 Slow Resistance,slow res
 Photosynthesis
 Heal On Teleport,heal on tp
@@ -38,7 +38,7 @@ Lava Eater
 Spontanious combustion
 Arrow Strike
 Fatal Strike,fs
-Ice Coffin Strike
+Ice Coffin Strike,ice coffin
 Soul Break
 Healthy Strike
 Untouchable,untouch
@@ -57,12 +57,12 @@ Ender Pearl Dispencer
 Mass Polymorph
 Aquatic Explosion
 Death Claw Critical,dclaw crit
-High Gravity Critical,high gravity crit
+High Gravity Critical,high gravity crit,hgc
 Magma Critical,magma crit
 Water Shot
 Dark Seed Explosion
 Volcanic Explosion
-Flower Healing
+Flower Healing,flower heal
 Backstab Resistance
 Explosion Resistance,explosion res
 Headshot Resistance,headshot res,hs res
@@ -133,7 +133,7 @@ Absorption,absorb,abs
 Water Breathing
 Night Vision
 Blindness Immunity,blind immunity,blind immun
-Knockback Immunity,kbi,kb immunity,knock back immunity
+Knockback Immunity,kbi,kb immunity,knock back immunity,knockback immun,kb immun
 Anti-Mage,antimage,anti mage
 Sacred Absorption
 Sacred Regen
@@ -143,7 +143,7 @@ Exp Gain Boost
 Increased Heal Power,inc heal power,incr heal power,inc heal,incr heal,increased heal,heal power
 Increased Potion Duration,inc potion duration,incr potion duration
 Increased Heal & Harm Potion,increased heal and harm potion,increased heal and harm,inc heal & harm,inc heal and harm
-Fast Potion Recharge,fast pot recharge
+Fast Potion Recharge,fast pot recharge,fast potion,fast pot
 Increased Dagger Replenish,incr dagger replenish,inc dagger replenish
 Increased Throwing Damage,incr throwing dmg,increased throwing damage,incr throwing damage
 Increased Maximum Daggers,inc maximum daggers,incr maximum daggers
@@ -229,9 +229,9 @@ Skeleton Archer
 Curse Skull
 Zombie Horse
 Bat Blink
-Sneak Fortitication,sneak fortification
+Sneak Fortitication,sneak fortification,sneak fort,sneak fortif
 Tornado
-Quickstep
+Quickstep,qs
 Dragon Spawn
 Flying Brown Panda
 Teleport Behind

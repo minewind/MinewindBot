@@ -18,7 +18,8 @@ const logger = winston.createLogger({
 	],
 });
 
-if (process.env.NODE_ENV !== "production") {
+// I just need logging rn
+if (process.env.NODE_ENV !== "production" || true) {
 	logger.add(
 		new winston.transports.Console({
 			format: winston.format.simple(),

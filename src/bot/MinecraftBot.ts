@@ -91,6 +91,13 @@ export class MinecraftBot {
 	}
 
 	getPlayerList(): string[] {
-		return Object.keys(this.bot.players);
+		return Object.keys(this.bot.players).sort((a, b) =>
+			a.toLowerCase().localeCompare(b.toLowerCase()),
+		);
+	}
+
+	getTabHeader(): string {
+		logger.warn("Tablist Info", this.bot.tablist);
+		return this.bot.tablist.header.toString();
 	}
 }
