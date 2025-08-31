@@ -90,3 +90,9 @@ export function parseRomanNumeral(numeral: string): number | undefined {
 		return rn_to_num[numeral];
 	}
 }
+
+export function generateNLengthNumber(n: number): string {
+	return Math.floor(Math.random() * 10 ** n)
+		.toString()
+		.padStart(n, "0");
+}

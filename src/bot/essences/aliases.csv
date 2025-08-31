@@ -51,12 +51,12 @@ Frost Armor
 Increased Infinity Blocks Placed
 Static Field
 Life Swap
-Summon Dimension Anomaly,dim anom
+Summon Dimension Anomaly,dim anom,dimensional anomaly,summon dimensional anomaly
 Water Eater
 Ender Pearl Dispencer
 Mass Polymorph
 Aquatic Explosion
-Death Claw Critical,dclaw crit
+Death Claw Critical,dclaw critical,dclaw crit,dclaw
 High Gravity Critical,high gravity crit,hgc
 Magma Critical,magma crit
 Water Shot
@@ -87,7 +87,7 @@ Feed Blocker,feed block
 Marker
 Magic Disrupt
 Starve
-Reduce Heal
+Reduce Heal,reduced heal
 Life Steal,ls,lifesteal
 Bloodlust
 Mounted Damage

@@ -8,6 +8,7 @@ import { Help } from "./commands/Help";
 import { Players } from "./commands/Players";
 import { PriceCheck } from "./commands/PriceCheck";
 import { Upcoming } from "./commands/Upcoming";
+import { Verifier } from "./commands/Verifier";
 import { DiscordBot } from "./discord/DiscordBot";
 import { EventChannel, Users } from "./discord/servers";
 import { Injest } from "./influx/injest";
@@ -93,6 +94,7 @@ async function main() {
 	const mostRecentEvent = new MostRecentEvent(client);
 	await mostRecentEvent.init();
 
+	const verifyHandler = new Verifier(minecraftBot, discordBot);
 	const commandManager = new CommandManagerBuilder()
 		.addCommand(new Help(), ["minecraft", "discord"])
 		.addCommand(new PriceCheck(), ["minecraft", "discord"])
@@ -112,6 +114,22 @@ async function main() {
 
 	// Command Handlers
 	discordBot.registerMessageHandler((message) => {
+		// Special processing for verification... this is such bad code
+		if (message.channelId === EventChannel.verify.channel_id) {
+			let msg = message.toString();
+			if (!msg.startsWith("-")) return false;
+
+			msg = msg.slice("-".length);
+			const [commandString, ...args] = msg.split(" ");
+			logger.debug("Command and Arguments", {
+				command: commandString,
+				args: args,
+			});
+			if (verifyHandler.isValid(commandString)) {
+				verifyHandler.process(commandString, args, "discord", message);
+			}
+			return false;
+		}
 		if (message.channelId !== EventChannel.commands.channel_id) {
 			return false;
 		}
@@ -129,6 +147,9 @@ async function main() {
 		if (!ChatEvent.regexes[0].test(message)) {
 			return false;
 		}
+
+		const chat = new ChatEvent(message);
+		if (chat.getName() === "MarkenAP") return false;
 
 		const messageBody = message.slice(message.indexOf(": ") + 2);
 
@@ -413,6 +434,7 @@ async function main() {
 			`> Talk on minewind from the comfort of discord! Join now ${discord_link}`,
 			`> Try my (very alpha) auto-price checking. Just do -pc (ess name) (level) e.g., -pc antimage 2`,
 			`> Type -help to learn about what commands I support.`,
+			`> New username verification for Minewind discord. Join and try it now ${discord_link}`,
 		];
 		const randomIdx = Math.floor(Math.random() * advertisements.length);
 		const randomAdvertisement = advertisements[randomIdx];

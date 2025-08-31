@@ -190,10 +190,10 @@ function extract_essences(
 }
 
 function parseAndInsertAliases(
-	grid: string[][],
+	alias_grid: string[][],
 	essences: Map<string, Essence>,
 ) {
-	for (const row of grid) {
+	for (const row of alias_grid) {
 		const [title, ...aliases] = row;
 		if (title in essences) {
 			essences[title].addAliases(aliases);

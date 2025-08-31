@@ -66,6 +66,9 @@ export const EventChannel = {
 	commands: {
 		channel_id: "1408317679152140299",
 	},
+	verify: {
+		channel_id: "1406155889555275896",
+	},
 } as const;
 
 export const Users = {
@@ -77,5 +80,8 @@ export const Users = {
 	},
 	bypass: {
 		ping_group: "1408088344533143622",
+	},
+	verified_player: {
+		ping_group: "1406147592127123567",
 	},
 } as const;
