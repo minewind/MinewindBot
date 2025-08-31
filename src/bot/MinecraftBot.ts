@@ -87,7 +87,11 @@ export class MinecraftBot {
 
 	send(message: string): void {
 		message = message.slice(0, 256);
-		this.bot.chat(message);
+		try {
+			this.bot.chat(message);
+		} catch (error) {
+			logger.error(`Unable to send minecraft chat message`, message);
+		}
 	}
 
 	getPlayerList(): string[] {

@@ -145,9 +145,11 @@ export class Essence {
 	generatePriceString(tier: number): string {
 		const idx = tier - 1;
 		if (tier > this.cap || this.prices[idx] === "") {
-			return `PC: ${this.title} is not available in tier ${tier}`;
+			return `PC: ${this.title} is not available in tier ${tier}. Max: ${this.cap}`;
 		} else if (this.prices[idx] === "(no ess form)") {
-			return `PC: ${this.title} is not available in ess form at tier ${tier}`;
+			return `PC: ${this.title} is not available in ess form at tier ${tier}. Max: ${this.cap}`;
+		} else if (this.prices[idx] === "(can stack to 4)") {
+			return `PC: ${this.title} is not available in ess form at tier ${tier}, but can stack to it.`;
 		} else if (this.cap === 1) {
 			return `PC: ${this.title} costs ${this.prices[idx]}`;
 		} else {
