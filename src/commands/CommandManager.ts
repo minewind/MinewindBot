@@ -1,48 +1,55 @@
-import Command from "./Command";
+import { Message } from 'discord.js';
+import { MinecraftBot } from '../bot/MinecraftBot';
+import { MostRecentEvent } from '../MostRecentEvent';
+import { Logger } from '../Logger';
+import { Command } from './Command';
+import { HelpCommand } from './Help';
+import { PlayersCommand } from './Players';
+import { PriceCheckCommand } from './PriceCheck';
+import { UpcomingCommand } from './Upcoming';
+import { VerifierCommand } from './Verifier';
+import Redis from 'ioredis';
 
 export class CommandManager {
-	prefix: string = "-";
-	config: CommandManagerConfig;
+  private readonly commands: Map<string, Command> = new Map();
 
-	constructor(config: CommandManagerConfig) {
-		this.config = config;
-	}
+  constructor(mc: MinecraftBot, mostRecentEvent: MostRecentEvent, redis: Redis, logger: Logger) {
+    const commandInstances: Command[] = [
+      new HelpCommand(),
+      new PlayersCommand(mc),
+      new PriceCheckCommand(),
+      new UpcomingCommand(mostRecentEvent),
+      new VerifierCommand(mc, redis, logger),
+    ];
+    
+    for (const command of commandInstances) {
+        this.addCommand(command);
+    }
+  }
 
-	process(
-		message: string,
-		source: "minecraft" | "discord",
-	): string | undefined {
-		if (!message.startsWith(this.prefix)) return;
+  private addCommand(command: Command): void {
+    this.commands.set(command.name.toLowerCase(), command);
+    for (const alias of command.aliases) {
+      this.commands.set(alias.toLowerCase(), command);
+    }
+  }
 
-		message = message.slice(this.prefix.length);
-		const [commandString, ...args] = message.split(" ");
+  async execute(message: Message): Promise<void> {
+    const args = message.content.slice(1).trim().split(/ +/);
+    const commandName = args.shift()?.toLowerCase();
 
-		for (const [command, mapping] of this.config) {
-			if (!mapping.includes(source)) continue;
-			if (command.isValid(commandString)) {
-				return command.process(commandString, args, source);
-			}
-		}
-	}
-}
+    if (!commandName) return;
 
-type Source = "minecraft" | "discord";
-// Map command to being enabled or disable for a source (missing is considered disable)
-export type CommandManagerConfig = Map<Command, Source[]>;
-
-export class CommandManagerBuilder {
-	config: Map<Command, Source[]>;
-	mostRecent: Command | undefined;
-	constructor() {
-		this.config = new Map();
-	}
-
-	addCommand(command: Command, allowedSources: Source[]) {
-		this.config.set(command, allowedSources);
-		return this;
-	}
-
-	build(): CommandManager {
-		return new CommandManager(this.config);
-	}
+    const command = this.commands.get(commandName);
+    if (command) {
+      try {
+        await command.execute(message, args);
+      } catch (error) {
+        console.error(`Error executing command ${commandName}:`, error);
+        await message.reply('An error occurred while executing that command.');
+      }
+    } else {
+      // Silently ignore unknown commands to reduce spam
+    }
+  }
 }
