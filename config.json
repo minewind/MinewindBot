@@ -1,0 +1,41 @@
+{
+  "discordToken": "YOUR_DISCORD_BOT_TOKEN",
+  "minecraft": {
+    "username": "YOUR_MINECRAFT_EMAIL",
+    "password": "YOUR_MINECRAFT_PASSWORD",
+    "server": "vote.minewind.com"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379
+  },
+  "mainServer": {
+    "id": "YOUR_MAIN_DISCORD_SERVER_ID",
+    "channels": {
+      "chat": "CHANNEL_ID",
+      "events": "CHANNEL_ID",
+      "welcome": "CHANNEL_ID",
+      "debug": "CHANNEL_ID",
+      "deatheffect": "CHANNEL_ID",
+      "giveaway": "CHANNEL_ID",
+      "snovasion": "CHANNEL_ID",
+      "labyrinth": "CHANNEL_ID",
+      "beef": "CHANNEL_ID",
+      "resets": "CHANNEL_ID",
+      "verifier": "CHANNEL_ID"
+    },
+    "roles": {
+      "snovasion": "ROLE_ID",
+      "labyrinth": "ROLE_ID",
+      "beef": "ROLE_ID"
+    }
+  },
+  "otherServers": [
+    {
+      "id": "ANOTHER_SERVER_ID",
+      "channels": {
+        "chat": "CHANNEL_ID"
+      }
+    }
+  ]
+}
