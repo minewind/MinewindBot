@@ -1,224 +1,70 @@
-import { distance } from "fastest-levenshtein";
-import * as fs from "fs";
-import * as Papa from "papaparse";
-import logger from "../../Logger";
-import { parseRomanNumeral, unspaceAndLowercase } from "../../util";
+import * as fs from 'fs';
+import * as path from 'path';
+import { parse } from 'csv-parse/sync';
 
 export class EssencePriceChecker {
-	essenceMap!: Map<string, Essence>;
-	essenceMapMaginalized!: Map<string, Essence>;
+  private readonly essenceMap: Map<string, number> = new Map();
+  private readonly marginalizedMap: Map<string, number> = new Map();
+  private isInitialized = false;
 
-	constructor() {
-		this.update();
-	}
+  constructor() {
+    // Constructor is intentionally empty. Initialization is handled by the async method.
+  }
 
-	update() {
-		const file = fs.readFileSync("./src/bot/essences/prices.csv", "utf-8");
-		const alias_file = fs.readFileSync(
-			"./src/bot/essences/aliases.csv",
-			"utf-8",
-		);
-		const grid = Papa.parse<string[]>(file).data;
-		const alias_grid = Papa.parse<string[]>(alias_file).data;
+  /**
+   * Asynchronously loads and parses the CSV files. Ensures it only runs once.
+   */
+  public async init(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
 
-		const price_tiers = extract_price_tiers(grid);
-		const essences = extract_essences(grid, price_tiers);
-		parseAndInsertAliases(alias_grid, essences);
-		this.essenceMap = generateFullMap(essences);
-		this.essenceMapMaginalized = marginalizeMap(this.essenceMap);
-	}
-	process(argList: string[]) {
-		let args = argList.join(" ").toLowerCase();
+    const pricesPath = path.join(__dirname, 'prices.csv');
+    const aliasesPath = path.join(__dirname, 'aliases.csv');
 
-		// Remove "essence of" from query
-		args = args.replace("essence of", "").replace("essence", "").trim();
+    try {
+      const [pricesContent, aliasesContent] = await Promise.all([
+        fs.promises.readFile(pricesPath, 'utf8'),
+        fs.promises.readFile(aliasesPath, 'utf8'),
+      ]);
 
-		const pcRegex = /^(.*?) ?(\d+| i| ii| iii| iv| v)?$/;
+      const prices: [string, string][] = parse(pricesContent);
+      const aliases: [string, string][] = parse(aliasesContent);
 
-		if (pcRegex.test(args)) {
-			const match = args.match(pcRegex);
-			if (match === null) return;
-			const spellName = match[1];
-			const raw_level = (match[2] || "1").trim();
-			const romanNumeral = parseRomanNumeral(raw_level);
-			const level = romanNumeral ? romanNumeral : Number(raw_level);
-			logger.debug(`"${spellName}": ${level}`);
-			const ess: Essence | undefined = this.lookupEssence(spellName);
-			if (typeof ess === "undefined") {
-				const distances = {};
-				for (const realname of Object.keys(this.essenceMap)) {
-					distances[realname] = distance(realname, spellName);
-				}
-				logger.debug(`Levenshtein calculations for ${spellName}`, distances);
-				const closest = Object.keys(distances).reduce((a, b) =>
-					distances[a] > distances[b] ? b : a,
-				);
-				return `Unable to price check that item. Maybe try ${closest}`;
-			} else {
-				return ess.generatePriceString(level);
-			}
-		}
-	}
+      for (const [name, priceStr] of prices) {
+        const price = parseInt(priceStr, 10);
+        if (!isNaN(price)) {
+          const cleanedName = this.cleanString(name);
+          this.essenceMap.set(name, price);
+          this.marginalizedMap.set(cleanedName, price);
+        }
+      }
 
-	legacyProcessMessage(message: string) {
-		logger.debug(`Processing command ${message}`);
-		message = message.toLowerCase();
+      for (const [alias, name] of aliases) {
+        const price = this.essenceMap.get(name);
+        if (price !== undefined) {
+          const cleanedAlias = this.cleanString(alias);
+          this.marginalizedMap.set(cleanedAlias, price);
+        }
+      }
 
-		const pcRegex = /^- *pc (.*?) ?([1-5]|i|ii|iii|iv|v)?$/;
+      this.isInitialized = true;
+    } catch (error) {
+      console.error("Failed to initialize EssencePriceChecker:", error);
+    }
+  }
 
-		if (pcRegex.test(message)) {
-			const match = message.match(pcRegex);
-			if (match === null) return;
-			const spellName = match[1];
-			const raw_level = match[2] || "1";
-			const rn_to_num = {
-				i: 1,
-				ii: 2,
-				iii: 3,
-				iv: 4,
-				v: 5,
-			};
-			const level =
-				raw_level in rn_to_num ? rn_to_num[raw_level] : Number(raw_level);
-			logger.debug(`"${spellName}": ${level}`);
-			const ess: Essence | undefined = this.lookupEssence(spellName);
-			if (typeof ess === "undefined") {
-				return "Unable to price check that item";
-			} else {
-				return ess.generatePriceString(level);
-			}
-		}
-	}
+  private cleanString(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
 
-	lookupEssence(essenceName: string): Essence | undefined {
-		const cleanedName = unspaceAndLowercase(essenceName);
-		if (cleanedName in this.essenceMapMaginalized) {
-			return this.essenceMapMaginalized[cleanedName];
-		}
-	}
-}
-
-class PriceTier {
-	title: string;
-	value: string;
-
-	constructor(title, value) {
-		this.title = title;
-		this.value = value;
-	}
-}
-
-function extract_price_tiers(grid: string[][]) {
-	const price_tiers: PriceTier[] = [];
-	for (let i = 13; i < 28; i++) {
-		const title = grid[i][12];
-		const value = grid[i][11].toLowerCase();
-		price_tiers.push(new PriceTier(title, value));
-	}
-	return price_tiers;
-}
-
-export class Essence {
-	cap: number;
-	title: string;
-	aliases: string[] = [];
-	prices: string[];
-
-	constructor(title: string, cap: number, prices: string[]) {
-		this.title = title;
-		this.cap = cap;
-		this.prices = prices;
-	}
-
-	static from_line(line: string[]): Essence | undefined {
-		if (line.length !== 7) {
-			return undefined;
-		}
-		if (line[0] === "") {
-			return undefined;
-		}
-		const [title, cap_str, ...prices] = line;
-		const cap = Number(cap_str) || 1;
-		return new Essence(title, cap, prices);
-	}
-
-	generatePriceString(tier: number): string {
-		const idx = tier - 1;
-		if (tier > this.cap || this.prices[idx] === "") {
-			return `PC: ${this.title} is not available in tier ${tier}. Max: ${this.cap}`;
-		} else if (this.prices[idx] === "(no ess form)") {
-			return `PC: ${this.title} is not available in ess form at tier ${tier}. Max: ${this.cap}`;
-		} else if (this.prices[idx] === "(can stack to 4)") {
-			return `PC: ${this.title} is not available in ess form at tier ${tier}, but can stack to it.`;
-		} else if (this.cap === 1) {
-			return `PC: ${this.title} costs ${this.prices[idx]}`;
-		} else {
-			return `PC: ${this.title} ${tier} costs ${this.prices[idx]}`;
-		}
-	}
-
-	updatePrices(price_tiers: PriceTier[]) {
-		for (let i = 0; i < this.prices.length; i++) {
-			for (const tier of price_tiers) {
-				this.prices[i] = this.prices[i].replace(
-					new RegExp(tier.title, "g"),
-					tier.value,
-				);
-			}
-		}
-	}
-
-	addAliases(aliases: string[]) {
-		this.aliases.push(...aliases);
-	}
-
-	toString() {
-		return `${this.title}@${this.cap}:${this.prices}`;
-	}
-}
-
-function extract_essences(
-	grid: string[][],
-	price_tiers: PriceTier[],
-): Map<string, Essence> {
-	const essences = new Map<string, Essence>();
-	for (const row of grid) {
-		const current = Essence.from_line(row.slice(1, 8));
-		if (typeof current === "undefined") continue;
-		current.updatePrices(price_tiers);
-		essences[current.title] = current;
-	}
-	return essences;
-}
-
-function parseAndInsertAliases(
-	alias_grid: string[][],
-	essences: Map<string, Essence>,
-) {
-	for (const row of alias_grid) {
-		const [title, ...aliases] = row;
-		if (title in essences) {
-			essences[title].addAliases(aliases);
-		}
-	}
-}
-
-function generateFullMap(essences: Map<string, Essence>) {
-	const fullMap = new Map<string, Essence>();
-	for (const essence of Object.values(essences)) {
-		fullMap[essence.title.toLowerCase()] = essence;
-		for (const alias of essence.aliases) {
-			console.log(`Adding ${alias} for ${essence.title}`);
-			fullMap[alias.toLowerCase()] = essence;
-		}
-	}
-	return fullMap;
-}
-
-function marginalizeMap(fullMap: Map<string, Essence>): Map<string, Essence> {
-	const marginalizeMap: Map<string, Essence> = new Map();
-	for (const [name, essence] of Object.entries(fullMap)) {
-		marginalizeMap[unspaceAndLowercase(name)] = essence;
-	}
-	return marginalizeMap;
+  public getPrice(name: string): number | undefined {
+    if (!this.isInitialized) {
+        // Or you could throw an error if init() hasn't been called.
+        console.error("EssencePriceChecker not initialized. Call init() first.");
+        return undefined;
+    }
+    const cleanedName = this.cleanString(name);
+    return this.marginalizedMap.get(cleanedName);
+  }
 }
