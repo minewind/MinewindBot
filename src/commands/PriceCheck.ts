@@ -1,30 +1,34 @@
-import { codeBlock, escapeCodeBlock } from "discord.js";
-import { EssencePriceChecker } from "../bot/essences/EssencePriceChecker";
-import { EventChannel } from "../discord/servers";
-import { manualSend } from "../util";
-import Command from "./Command";
+import { Message } from 'discord.js';
+import { Command } from './Command';
+import { EssencePriceChecker } from '../bot/essences/EssencePriceChecker';
 
-export class PriceCheck implements Command {
-	essencePriceChecker: EssencePriceChecker;
+export class PriceCheckCommand extends Command {
+  name = 'pc';
+  aliases = ['pricecheck'];
+  description = 'Checks the price of an essence.';
 
-	constructor() {
-		this.essencePriceChecker = new EssencePriceChecker();
-	}
-	isValid(command: string): boolean {
-		return command === "pc";
-	}
-	process(
-		command: string,
-		args: string[],
-		source: "minecraft" | "discord",
-	): string | undefined {
-		const result = this.essencePriceChecker.process(args);
-		manualSend(
-			codeBlock(
-				`>>> ${escapeCodeBlock(args.join(" "))}\n<<< ${result || "undefined"}`,
-			),
-			EventChannel.debug.channel_id,
-		);
-		return result;
-	}
+  private static checker = new EssencePriceChecker();
+
+  constructor() {
+    super();
+    PriceCheckCommand.checker.init();
+  }
+
+  async execute(message: Message, args: string[]): Promise<void> {
+    await PriceCheckCommand.checker.init();
+
+    const essenceName = args.join(' ');
+    if (!essenceName) {
+      await message.reply('Please provide an essence name. Usage: `!pc <essence>`');
+      return;
+    }
+
+    const price = PriceCheckCommand.checker.getPrice(essenceName);
+
+    if (price !== undefined) {
+      await message.reply(`The price of **${essenceName}** is approximately **${price}** diamonds.`);
+    } else {
+      await message.reply(`Could not find a price for **${essenceName}**.`);
+    }
+  }
 }
