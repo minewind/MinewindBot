@@ -1,98 +1,13 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
-import fetch from "node-fetch";
-import logger from "./Logger";
-
-export function flatten(arg: object): string {
-	if (Array.isArray(arg)) {
-		return arg.map((x) => flatten(x)).join("");
-	}
-	if (typeof arg === "string" || arg instanceof String) {
-		return arg as string;
-	}
-	let out = "";
-	if ("json" in arg) {
-		out += flatten(arg["json"] || "");
-	}
-	if ("text" in arg) {
-		out += arg["text"] || "";
-	}
-	if ("extra" in arg) {
-		out += flatten(arg["extra"] || "");
-	}
-	out += arg[""] || "";
-	return out;
+export function ping(roleId: string): string {
+  if (!roleId) return '';
+  return `<@&${roleId}>`;
 }
 
-export function stripMinecraftColors(message: string): string {
-	message = message.replace(/§[a-zA-Z0-9]/gm, "");
-	return message;
-}
-
-export function cleanMinecraftJson(message): string {
-	let flatMessage = flatten(message) || "";
-	let cleanedMessage = stripMinecraftColors(flatMessage);
-	return cleanedMessage;
-}
-
-export function ping(role_id: string) {
-	return `<@&${role_id}>`;
-}
-
-export function pingUser(user_id: string) {
-	return `<@${user_id}>`;
-}
-
-export async function manualSend(message: string, channelId: string) {
-	const response = await fetch(
-		`https://discord.com/api/channels/${channelId}/messages`,
-		{
-			method: "POST",
-			headers: {
-				Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				content: message,
-			}),
-		},
-	);
-	logger.debug(
-		`Manual message "${message}" received ${response.status}-${response.statusText}`,
-	);
-}
-
+/**
+ * Adds zero-width spaces to break up links and prevent them from embedding in Discord.
+ */
 export function breakLinks(message: string): string {
-	return message.replace(/(?<=[A-Za-z0-9])\.(?=[A-Za-z])/gi, "(.)");
-}
-
-export function getRandomInt(min, max) {
-	min = Math.ceil(min);
-	max = Math.floor(max);
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-export function unspaceAndLowercase(message: string): string {
-	return message.toLocaleLowerCase().replace(/ /g, "");
-}
-
-export function parseRomanNumeral(numeral: string): number | undefined {
-	const rn_to_num = {
-		i: 1,
-		ii: 2,
-		iii: 3,
-		iv: 4,
-		v: 5,
-	};
-	if (numeral in rn_to_num) {
-		return rn_to_num[numeral];
-	}
-}
-
-export function generateNLengthNumber(n: number): string {
-	return Math.floor(Math.random() * 10 ** n)
-		.toString()
-		.padStart(n, "0");
+  return message.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+    return url.split('').join('\u200B');
+  });
 }
