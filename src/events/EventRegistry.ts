@@ -1,31 +1,45 @@
 import { BaseMessageEvent } from '../MessageEvent';
 import {
-  WelcomeEvent, VoteEvent, SnovasionEvent, LabyrinthEvent, BeefEvent,
-  DragonEvent, DeatheffectEvent, GiveawayEvent, ResetEvent
-} from './MinecraftEvents'; // Assuming you move all event classes to this directory
+    WelcomeEvent, VoteEvent, SharpeningEvent, SystemEvent, ChatEvent, DeathEvent,
+    SnovasionStartEvent, SnovasionEndEvent,
+    LabyrinthStartEvent, LabyrinthEndEvent,
+    BeefStartEvent, BeefEndEvent,
+    AbyssalStartEvent, AbyssalEndEvent,
+    AttackOnGiantStartEvent, AttackOnGiantEndEvent,
+    FoxHuntStartEvent, FoxHuntEndEvent, FoxHuntLeaderboardEvent,
+    BaitStartEvent, BaitEndEvent, BaitLeaderboardEvent,
+    CastleStartEvent, CastleControlEvent,
+    TDMStartEvent, TDMEndEvent,
+    FFAStartEvent, FFAEndEvent, FFALeaderboardEvent
+} from './MinecraftEvents';
 
-type MessageEventConstructor = new (message: string) => BaseMessageEvent;
+type MessageEventConstructor = (new (message: string) => BaseMessageEvent) & {
+    isValid(message: string): boolean;
+};
+
 
 const eventMatchers: MessageEventConstructor[] = [
-  WelcomeEvent,
-  VoteEvent,
-  SnovasionEvent,
-  LabyrinthEvent,
-  BeefEvent,
-  DragonEvent,
-  DeatheffectEvent,
-  GiveawayEvent,
-  ResetEvent
+    SnovasionStartEvent, SnovasionEndEvent,
+    LabyrinthStartEvent, LabyrinthEndEvent,
+    BeefStartEvent, BeefEndEvent,
+    AbyssalStartEvent, AbyssalEndEvent,
+    AttackOnGiantStartEvent, AttackOnGiantEndEvent,
+    FoxHuntStartEvent, FoxHuntEndEvent, FoxHuntLeaderboardEvent,
+    BaitStartEvent, BaitEndEvent, BaitLeaderboardEvent,
+    CastleStartEvent, CastleControlEvent,
+    TDMStartEvent, TDMEndEvent,
+    FFAStartEvent, FFAEndEvent, FFALeaderboardEvent,
+    WelcomeEvent,
+    VoteEvent,
+    SharpeningEvent,
+    SystemEvent,
+    ChatEvent,
+    DeathEvent
 ];
 
-/**
- * Processes a raw Minecraft message and returns an instantiated event object if a match is found.
- * @param message The raw message string from the Minecraft server.
- * @returns An instance of a MessageEvent class or null if no match is found.
- */
 export function processMessage(message: string): BaseMessageEvent | null {
   for (const EventClass of eventMatchers) {
-    if ('isValid' in EventClass && typeof EventClass.isValid === 'function' && EventClass.isValid(message)) {
+    if (EventClass.isValid(message)) {
       return new EventClass(message);
     }
   }
